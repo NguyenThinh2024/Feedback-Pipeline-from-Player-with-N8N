@@ -1,0 +1,497 @@
+{
+  "name": "Send player feedback to discord",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "a1d21066-fd06-4f4d-9bd6-1daafcb386e6",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -480,
+        256
+      ],
+      "id": "c7c6414b-93d7-4305-9994-3f13a5c61f09",
+      "name": "Webhook",
+      "webhookId": "a1d21066-fd06-4f4d-9bd6-1daafcb386e6"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -208,
+        448
+      ],
+      "id": "962d5cc9-1d69-42c4-bfe3-dbac74d67039",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Wl1RHKKXcXZhpe1M",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Classify this player message into:\n- bug report\n- feedback\n- toxic\n\nAlso detect sentiment: positive / neutral / negative\n\nMessage: {{$json.body.message}}\n\nReturn JSON:\n{\n \"type\": \"\",\n \"sentiment\": \"\"\n}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -240,
+        256
+      ],
+      "id": "05971616-550b-4437-819b-b06fc881e3ee",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lấy raw output từ Gemini\nconst raw = $json.output;\n\n// Xóa markdown ```json ```\nconst cleaned = raw\n  .replace(/```json/g, \"\")\n  .replace(/```/g, \"\")\n  .trim();\n\n// Parse thành object\nlet parsed;\n\ntry {\n  parsed = JSON.parse(cleaned);\n} catch (e) {\n  parsed = {\n    type: \"unknown\",\n    sentiment: \"unknown\"\n  };\n}\n\n// Trả về data mới\nreturn {\n  json: {\n    ...$json,\n    ai: parsed\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        64,
+        256
+      ],
+      "id": "80917db0-5796-48f9-b67a-baaaa548e74d",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "045fd51b-00f2-4c5e-b5b5-9a7a32cd7b5c",
+              "leftValue": "={{ $json.ai.type }}",
+              "rightValue": "bug report",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {
+          "ignoreCase": false
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        272,
+        256
+      ],
+      "id": "a76cd7a7-c7f2-4997-82c5-dee1a61c6912",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1f37db82-84a0-4289-82dc-f7bd03c21525",
+              "leftValue": "={{ $json.ai.type }}",
+              "rightValue": "toxic",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        432,
+        400
+      ],
+      "id": "93f83670-1a1e-49ca-bcb9-9859c9107d94",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1481658999370682541",
+          "mode": "list",
+          "cachedResultName": "Thiếu Niên Khí Chất",
+          "cachedResultUrl": "https://discord.com/channels/1481658999370682541"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "1481658999895232669",
+          "mode": "list",
+          "cachedResultName": "chung",
+          "cachedResultUrl": "https://discord.com/channels/1481658999370682541/1481658999895232669"
+        },
+        "content": "=FEEDBACK from player: \" {{ $('Webhook').item.json.body.message }} \"",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        704,
+        480
+      ],
+      "id": "b26cd6af-9567-4f7d-a823-5f300c24417d",
+      "name": "Feedback",
+      "webhookId": "6260c762-ed15-48b3-b64a-5a53ac434afe",
+      "credentials": {
+        "discordBotApi": {
+          "id": "izXU1rzIADwIJa13",
+          "name": "Discord Bot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1481658999370682541",
+          "mode": "list",
+          "cachedResultName": "Thiếu Niên Khí Chất",
+          "cachedResultUrl": "https://discord.com/channels/1481658999370682541"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "1481658999895232669",
+          "mode": "list",
+          "cachedResultName": "chung",
+          "cachedResultUrl": "https://discord.com/channels/1481658999370682541/1481658999895232669"
+        },
+        "content": "=JUST TOXIC:  {{ $('Webhook').item.json.body.message }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        704,
+        128
+      ],
+      "id": "cba6448a-9f20-4c01-8af8-3a9fb6589461",
+      "name": "Toxic",
+      "webhookId": "ac38f1ac-5395-4e75-ba49-b39f1683559e",
+      "credentials": {
+        "discordBotApi": {
+          "id": "izXU1rzIADwIJa13",
+          "name": "Discord Bot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        896,
+        256
+      ],
+      "id": "f1c3f1c7-78e5-4cab-98cd-18ff81a20344",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "189cYn9o6CvoL1qoOIbVb5L8PEezLOdkxkSlc_VqqjAk",
+          "mode": "list",
+          "cachedResultName": "Sheet Lưu Feedback",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/189cYn9o6CvoL1qoOIbVb5L8PEezLOdkxkSlc_VqqjAk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Trang tính1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/189cYn9o6CvoL1qoOIbVb5L8PEezLOdkxkSlc_VqqjAk/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Type": "={{ $json.ai.type }}",
+            "Sentiment": "={{ $json.ai.sentiment }}",
+            "ID": "={{ $('Webhook').item.json.body.playerId }}",
+            "Date": "={{ $('Webhook').item.json.body.time }}",
+            "Feedback": "={{ $('Webhook').item.json.body.message }}"
+          },
+          "matchingColumns": [
+            "ID"
+          ],
+          "schema": [
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Feedback",
+              "displayName": "Feedback",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Type",
+              "displayName": "Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sentiment",
+              "displayName": "Sentiment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1104,
+        272
+      ],
+      "id": "24abee63-70b5-410d-ad57-89c1d8250e78",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "vUBJYjee7aYtrwCS",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1481658999370682541",
+          "mode": "list",
+          "cachedResultName": "Thiếu Niên Khí Chất",
+          "cachedResultUrl": "https://discord.com/channels/1481658999370682541"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "1481658999895232669",
+          "mode": "list",
+          "cachedResultName": "chung",
+          "cachedResultUrl": "https://discord.com/channels/1481658999370682541/1481658999895232669"
+        },
+        "content": "=🚨 BUG :  {{ $('Webhook').item.json.body.message }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        448,
+        112
+      ],
+      "id": "925ed8d2-402b-4432-8b3f-962d093446aa",
+      "name": "BUG",
+      "webhookId": "1781532b-7ecd-4930-8081-7ce2cc3974e8",
+      "credentials": {
+        "discordBotApi": {
+          "id": "izXU1rzIADwIJa13",
+          "name": "Discord Bot account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "BUG",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Toxic",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "Feedback",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Toxic": {
+      "main": [
+        []
+      ]
+    },
+    "Feedback": {
+      "main": [
+        []
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        []
+      ]
+    },
+    "BUG": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a1473863-7325-45cd-8c5b-420d8f30a5e3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8681aba1ad3dbc9981d0ac9ca36ee9a857a142e2dbb36eb109ed86adab0ad405"
+  },
+  "id": "A9T9n2Ql9OtsRh38",
+  "tags": []
+}
