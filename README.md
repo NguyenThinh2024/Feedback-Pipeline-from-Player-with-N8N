@@ -46,7 +46,8 @@ And performs sentiment analysis:
 
 ## 🖼️ Demo
 
-(Add screenshots or GIF here)
+<img width="1093" height="354" alt="image" src="https://github.com/user-attachments/assets/2006fe28-4bf0-4f44-8400-211c8dfa4f73" />
+
 
 ## 📦 Setup
 
